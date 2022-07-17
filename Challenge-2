@@ -1,0 +1,9 @@
+import boto3
+
+ec2_client = boto3.client('ec2', region_name=region)
+ec2_details = ec2_client.describe_instances(InstanceIds=[id of instance])
+response1 = ec2_details['Reservations']
+for item in response1:
+  for item2 in item['Instances']:
+     print(item2['InstanceType'])
+

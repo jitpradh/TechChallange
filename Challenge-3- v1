@@ -1,0 +1,19 @@
+Challenge-3-v1
+--------------
+
+def fn_1(object1,key1):
+    input_list = key1.split('/')
+    for i in range(len(input_list)):
+        object1 = object1['{}'.format(input_list[i])]
+    return object1
+
+object = {'x':{'y':{'z':'a'}}}
+key = 'x/y/z'
+result = fn_1(object,key)
+print(result)
+
+
+
+
+
+

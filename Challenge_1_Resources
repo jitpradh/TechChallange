@@ -1,0 +1,365 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  - Creates WebApps, RDS and External ALB
+Mappings:
+  EnvironmentMap:
+    DefaultMap:
+      DEV: DV
+      PRD: PD
+      PPD: PP
+  RegionMap:
+    us-east-1:
+      RegionCode: AV
+    us-east-2:
+      RegionCode: AO
+Metadata:
+    AWS::CloudFormation::Interface:
+        ParameterGroups:
+          - Label:
+              default: "VPC Network Configuration"
+            Parameters:
+              - VPCID
+              - ALBSubnet1
+              - ALBSubnet2
+              - ExtSubnet1
+              - ExtSubnet2
+              - DBMSubnet1
+              - DBMSubnet2
+              - DefaultSecurityGroup
+          - Label:
+              default: DB Server Information
+            Parameters:
+              - DBEngine
+              - DBInstanceType
+              - DBIdentifier
+              - DBStorageSize
+              - DBEngineVersion
+              - License
+          - Label:
+              default: DB Server Credentials information
+            Parameters:
+              - DBMasterUserName
+              - DBMasterPassword
+          - Label:
+              default: Web Server Info
+            Parameters:
+              - WEBSImageIdAMI
+              - WEBSInstanceType
+              - WEBSServerRole
+              - WEBSServerNumber1
+              - WEBSServerNumber2
+              - IAMWebInstanceRole
+          - Label:
+              default:  Miscellaneous Server Information
+            Parameters:
+              - Keypair
+          - Label:
+              default: "General Information for Internal ALB"
+            Parameters:
+              - ALBName
+              - ALBListenerPort
+Parameters:
+  VPCID:
+    Type: String
+    Default: <ID Of VPC>
+  ALBSubnet1:
+    Type: String
+    Default: <ID of ALB subnet1>
+  ALBSubnet2:
+    Type: String
+    Default: <ID of ALB subnet2>
+  ExtSubnet1:
+    Type: String
+    Default: <ID of ext subnet1>
+  ExtSubnet2:
+    Type: String
+    Default: <ID of ext subnet2>
+  DBMSubnet1:
+    Type: String
+    Default: <ID of DB subnet1>
+  DBMSubnet2:
+    Type: String
+    Default: <ID of DB subnet2>
+   
+# DB Parameters section
+  EnvType:
+    Description: Environment type
+    Type: String
+    Default: PRD
+    AllowedValues:
+      - DEV
+      - PRD
+      - PPD
+  EnvNumber:
+    Description: Environment Number
+    Type: String
+    MinLength: 2
+    MaxLength: 2
+    Default: '00'
+  DBInstanceType:
+    Description: RDS DB instance type
+    Type: String
+    Default: db.m5.xlarge
+  DBIdentifier:
+    Description: RDS DB identifier
+    Type: String
+    Default: RDSNew
+  DBMasterPassword:
+    NoEcho: 'true'
+    Description: The database admin account password
+    Type: String
+    MinLength: '1'
+    MaxLength: '41'
+    AllowedPattern: '^[a-zA-Z0-9]*$'
+  DBEngineVersion:
+    Description: RDS Engine version
+    Type: String
+    Default: <Any Default Version>
+  DBEngine:
+    Description: RDS Engine
+    Type: String
+    Default: <Deafult DB engine>
+  DBStorageSize:
+    Description: RDS DB Size in GBs
+    Type: String
+    Default: <Default DB Size>
+  License:
+    Description: License Model details
+    Type: String
+    Default: license-included
+  DBMasterUserName:
+    Description: RDS Mater username
+    Type: String
+  DBServerRole:
+    Description: Server role
+    Type: String
+    Default: <Deafult Server Role for tag>
+  DBServerNumber:
+    Description: Server Number
+    Type: String
+    MinLength: 2
+    MaxLength: 2
+    Default: <any default value>
+  StorageTypes:
+    Description: Type of storage
+    Type: String
+    Default: gp2
+  DefaultSecurityGroup:
+    Description: Security group
+    Type: String
+    Default: <Default SG group ID>
+   
+#EC2 Instance Parameter section
+
+  Keypair:
+    Description: EC2 key pair for all servers
+    Type: String
+    Default: <Deafult Key pair>
+  IAMWebInstanceRole:
+    Description: IAM Instance Role for Web servers
+    Type: String
+    Default: <Default IAM Role>
+  WEBSImageIdAMI:
+    Description: AMI for Single Server
+    Type: String
+    Default: <Deafult AMI ID>
+  WEBSInstanceType:
+    Description: EC2 Instance Type for Single Server
+    Type: String
+    Default: <Default instnace type>
+  WEBSServerRole:
+    Description: Server role code
+    Type: String
+    Default: <Default Code>
+  WEBSServerNumber1:
+    Description: 'WEBS Server Number '
+    Type: Number
+    Default: '01'
+  WEBSServerNumber2:
+    Description: 'WEBS Server Number '
+    Type: Number
+    Default: '02'    
+
+#ALB Parameter section
+
+  ALBName:
+    Description: "ALB Name"
+    Type: String
+    MinLength: 3
+    MaxLength: 28
+    Default: <Default ALB Name>
+  ALBListenerPort:
+    Description: "Specify the HTTPS port the ALB will be listening on"
+    Type: Number
+    MinValue: 80
+    MaxValue: 65535
+    Default: 443
+   
+# RDDS MSSQL Server creation
+
+Resources:
+  DBSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: description
+      SubnetIds:
+        - !Ref DBMSubnet1
+        - !Ref DBMSubnet2
+      Tags:
+        - Key: Name
+          Value: 'RDSSubnetGroup'
+  RDSSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Allow RDS ports
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '1433'
+          ToPort: '1433'
+          CidrIp: <CIDR to provide access>
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+  MSSQLDB:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceIdentifier: !Ref DBIdentifier
+      AllocatedStorage: !Ref DBStorageSize
+      DBInstanceClass: !Ref DBInstanceType
+      Engine: !Ref DBEngine
+      LicenseModel: !Ref License  
+      StorageType: !Ref StorageTypes  
+      MasterUsername: !Ref DBMasterUserName
+      MasterUserPassword: !Ref DBMasterPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RDSSG
+      Tags:
+        - Key: Name
+          Value: RDSDB
+
+#WEB Servers creation
+
+  WEBSInstance1:
+    Type: 'AWS::EC2::Instance'
+
+    Properties:
+      ImageId: !Ref WEBSImageIdAMI
+      InstanceType: !Ref WEBSInstanceType
+      SubnetId: !Ref ExtSubnet1
+      Tags:
+        - Key: Name
+          Value: !Join ["", [!FindInMap [EnvironmentMap, DefaultMap, !Ref EnvType], !Ref EnvNumber, !FindInMap [RegionMap,!Ref "AWS::Region",RegionCode], !Ref WEBSServerRole, !Ref WEBSServerNumber1]]
+      SecurityGroupIds:
+        - !Ref DefaultSecurityGroup
+      KeyName: !Ref Keypair
+      IamInstanceProfile: !Ref IAMWebInstanceRole
+
+  WEBSInstance2:
+    Type: 'AWS::EC2::Instance'
+
+    Properties:
+      ImageId: !Ref WEBSImageIdAMI
+      InstanceType: !Ref WEBSInstanceType
+      SubnetId: !Ref ExtSubnet2
+      Tags:
+        - Key: Name
+          Value: !Join ["", [!FindInMap [EnvironmentMap, DefaultMap, !Ref EnvType], !Ref EnvNumber, !FindInMap [RegionMap,!Ref "AWS::Region",RegionCode], !Ref WEBSServerRole, !Ref WEBSServerNumber2]]
+      SecurityGroupIds:
+        - !Ref DefaultSecurityGroup
+      KeyName: !Ref Keypair
+      IamInstanceProfile: !Ref IAMWebInstanceRole
+
+
+#####################ALB Security Group#######################
+
+  ALBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Join ["",[ !Ref EnvType,!Ref EnvNumber, "alb:sg"] ]
+      GroupDescription: Security group for the ALB
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: <CIDR Range>
+          Description: Allow the traffic to WebApps Servers
+
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+
+      Tags:
+        - Key: Name
+          Value: !Join ["",[ !Ref EnvType,!Ref EnvNumber, "alb:sg"] ]
+
+######################Load Balancer Creation##################
+
+  PublicLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+        Scheme: internet-facing
+        Name: !Join ["-", [ !Ref ALBName, "alb" ]]
+        Subnets:
+        - Ref: ALBSubnet1
+        - Ref: ALBSubnet2
+        LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '300'
+        SecurityGroups:
+        - Ref: ALBSG
+        Tags:
+        - Key: Name
+          Value: !Ref ALBName
+
+############################ Listener ########################
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+        DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: WEBTargetGroup
+        LoadBalancerArn:
+          Ref: PublicLoadBalancer
+        Port:
+          Ref: ALBListenerPort
+        Protocol: HTTPS
+        Certificates:
+        - CertificateArn: <Give Certificate ARN>
+
+############################ TARGET GROUPS ########################
+
+  WEBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+        HealthCheckIntervalSeconds: 60
+        UnhealthyThresholdCount: 10
+        HealthCheckPath: /
+        Name: !Join ["-",[ !Ref ALBName,"web-tg" ] ]
+        Port: 443
+        Protocol: HTTPS
+        VpcId:
+          Ref: VPCID
+        Tags:
+        - Key: Name
+          Value: !Join ["-",[ !Ref ALBName, "web-tg" ] ]
+
+############################ Listener Rules ########################
+
+  DefaultListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+        Actions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: WEBTargetGroup
+        Conditions:
+        - Field: host-header
+          Values:
+          - <URL Details>
+        ListenerArn:
+          Ref: ALBListener

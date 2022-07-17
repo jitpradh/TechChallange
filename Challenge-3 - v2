@@ -1,0 +1,15 @@
+Challenge-3-v2
+--------------
+
+tem1 = {'a':{'b':{'c':{'d':'e'}}}}
+inpt = input('Enter query:')
+input_list = inpt.split('/')
+def fn_1(val):
+    var = item1['{}'.format(val)]
+    return var
+for i in range(len(input_list)):
+    item1 = fn_1(input_list[i])
+print(item1)
+
+
+

@@ -1,0 +1,358 @@
+Description:
+  - VPC
+  - Public and Private subnets across two availability zones
+  - Custom Routing Tables
+  - Default Security Group
+
+Mappings:
+  EnvironmentMap:
+    DefaultMap:
+      DEV: DV
+      PRD: PD
+      PPD: PP
+  RegionMap:
+    us-east-1:
+      RegionCode: AV
+    us-east-2:
+      RegionCode: AO
+Metadata:
+    AWS::CloudFormation::Interface:
+        ParameterGroups:
+          - Label:
+              default: "General VPC Information"
+            Parameters:
+              - AccountShortName
+              - VPCShortName
+          - Label:
+              default: "VPC Network Configuration"
+            Parameters:
+              - VPCxAZ1
+              - VPCxAZ2
+              - VPCxCIDR
+              - ALBSubnetxCIDR1
+              - ALBSubnetxCIDR2
+              - ExtSubnetxCIDR1
+              - ExtSubnetxCIDR2              
+              - DBMSubnetxCIDR1
+              - DBMSubnetxCIDR2
+              - IntSubnetxCIDR1
+              - IntSubnetxCIDR2
+
+Parameters:
+  AccountShortName:
+    Description: " AWS account short name for tagging"
+    Type: String
+    MinLength: 2
+    MaxLength: 16
+  VPCShortName:
+    Description: "Examples - prd, ppd"
+    Type: String
+    MinLength: 2
+    MaxLength: 16
+  VPCxCIDR:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of VPC >
+  VPCxAZ1:
+    Type: AWS::EC2::AvailabilityZone::Name
+  VPCxAZ2:
+    Type: AWS::EC2::AvailabilityZone::Name
+  ALBSubnetxCIDR1:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of ALb subnet1 >
+  ALBSubnetxCIDR2:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of ALb subnet2 >
+  ExtSubnetxCIDR1:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of ext subnet1 >
+  ExtSubnetxCIDR2:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of ext subnet2 >
+  DBMSubnetxCIDR1:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of DB subnet1 >
+  DBMSubnetxCIDR2:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of DB subnet2 >
+  IntSubnetxCIDR1:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of int subnet1 >
+  IntSubnetxCIDR2:
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: <Default CIDR of int subnet2 >
+
+# End of Parameters Section ---------------------------------------------------
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+        CidrBlock: !Ref VPCxCIDR
+        EnableDnsHostnames: 'true'
+        Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "vpc" ]]
+         
+# Subnets ---------------------------------------------------------------------
+
+  ALBSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ALBSubnetxCIDR1
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "ALB", "subnet", !Ref VPCxAZ1 ] ]
+  ALBSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ALBSubnetxCIDR2
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "ALB", "subnet", !Ref VPCxAZ2 ] ]
+  ExtSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ExtSubnetxCIDR1
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "extapp-1", "subnet", !Ref VPCxAZ1 ] ]
+  ExtSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ExtSubnetxCIDR2
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "extapp-2", "subnet", !Ref VPCxAZ2 ] ]
+  DBMSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DBMSubnetxCIDR1
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "dbm-1", "subnet", !Ref VPCxAZ1 ] ]
+  DBMSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DBMSubnetxCIDR2
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "dbm-2", "subnet", !Ref VPCxAZ2 ] ]
+  IntSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref IntSubnetxCIDR1
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "intapp-1", "subnet", !Ref VPCxAZ1 ] ]
+  IntSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref VPCxAZ2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref IntSubnetxCIDR2
+      Tags:
+        - Key: Name
+          Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "intapp-2", "subnet", !Ref VPCxAZ2 ] ]
+
+
+# Security Groups -------------------------------------------------------------
+
+  DefaultSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ["-",[ !Ref AccountShortName,!Ref VPCShortName, "default:sg"] ]
+      GroupDescription: Default Security group for VPC
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        -
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: <CIDR Range>
+          Description: SSH Access
+         
+      SecurityGroupEgress:
+        -
+          IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join ["-",[ !Ref AccountShortName,!Ref VPCShortName, "default:sg"] ]
+
+         
+# Route Table -------------------------------------------------------------
+
+  CustomRT1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "pri", "rt1" ] ]
+  CustomRT2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join [":",[ !Ref AccountShortName, !Ref VPCShortName, "pub", "rt1" ] ]        
+
+# Route Table Association-------------------------------------------------------------
+
+  ALBSubnetSubnetRTAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ALBSubnet1
+      RouteTableId: !Ref CustomRT2
+
+  ALBSubnetSubnetRTAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ALBSubnet2
+      RouteTableId: !Ref CustomRT2  
+
+  AppsDBMSubnetRTAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ExtSubnet1
+      RouteTableId: !Ref CustomRT1
+
+  AppsDBMSubnetRTAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ExtSubnet2
+      RouteTableId: !Ref CustomRT1
+
+  AppsDBMSubnetRTAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref DBMSubnet1
+      RouteTableId: !Ref CustomRT1
+
+  AppsDBMSubnetRTAssociation4:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref DBMSubnet2
+      RouteTableId: !Ref CustomRT1
+
+  IntSubnetRTAssociation5:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref IntSubnet1
+      RouteTableId: !Ref CustomRT1
+
+  IntSubnetRTAssociation6:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref IntSubnet2
+      RouteTableId: !Ref CustomRT1
+
+# Internet Gateway ------------------------------------------------------------
+
+  PublicIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Join [":", [ !Ref AccountShortName,!Ref VPCShortName,"igw"  ]]
+      - Key: environment
+        Value: Public
+
+# VPC Endpoints ---------------------------------------------------------------
+
+  S3VPCEndpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+        PolicyDocument: {
+            "Version":"2012-10-17",
+            "Statement":[{
+                "Effect":"Allow",
+                "Principal": "*",
+                "Action":["*"],
+                "Resource":["*"]
+            }]
+        }
+        RouteTableIds:
+        - !Ref CustomRT1
+        ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+        VpcId: !Ref VPC
+       
+  EC2Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref IntSubnet1
+        - !Ref IntSubnet2
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ec2
+      PrivateDnsEnabled: True
+      SecurityGroupIds:
+        - !Ref DefaultSecurityGroup
+      VpcId: !Ref VPC
+
+#  Outputs ---------------------------------------------------------------
+
+Outputs:
+  VPCShortName:
+    Description: Short Name for VPC
+    Value: !Ref VPCShortName
+  VPCxCIDR:
+    Description: VPC Network Range
+    Value: !Ref VPCxCIDR
+  ALBSubnetxCIDR1:
+    Description: Private Subnet (ALB) in AZ1
+    Value: !Ref ALBSubnetxCIDR1
+  ALBSubnetxCIDR2:
+    Description: Private Subnet (ALB) in AZ2
+    Value: !Ref ALBSubnetxCIDR2
+  ExtSubnetxCIDR1:
+    Description: Private Subnet (WEBAPPS) in AZ1
+    Value: !Ref ExtSubnetxCIDR1
+  ExtSubnetxCIDR2:
+    Description: Private Subnet (WEBAPPS) in AZ2
+    Value: !Ref ExtSubnetxCIDR2
+  DBMSubnetxCIDR1:
+    Description: Private Subnet (RDS) in AZ1
+    Value: !Ref DBMSubnetxCIDR1
+  DBMSubnetxCIDR2:
+    Description: Private Subnet (RDS) in AZ2
+    Value: !Ref DBMSubnetxCIDR2
+  IntSubnetxCIDR1:
+    Description: Private Subnet (IntApps) in AZ1
+    Value: !Ref IntSubnetxCIDR1
+  IntSubnetxCIDR2:
+    Description: Private Subnet (IntApps) in AZ2
+    Value: !Ref IntSubnetxCIDR2
+
